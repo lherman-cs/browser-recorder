@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Browser Visualization</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <style>
+    .grid-container {
+      display: grid;
+      height: 100vh;
+      width: 100vw; 
+      grid-column-gap: 0px;
+      grid-row-gap: 0px;
+      grid-template:
+        "a b" auto
+        "a c" auto
+        "d d" auto
+    }
+
+    #video {
+      grid-area: a; 
+    }
+
+    #video-input {
+      display: block;
+    }
+
+    #video-player {
+      width: 100%;
+      height: auto;
+    }
+
+    #network-table {
+      grid-area: b;
+      cursor: pointer;
+    }
+
+    .selected-row {
+      background-color: lightgreen; /* Or any desired color */
+    }
+
+    #network-detail {
+      grid-area: c;
+    }
+
+    #seeker {
+      grid-area: d;
+    }
+
+    #seeker__seek {
+      width: 100%;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="grid-container" id="viz-container">
+      <div class="grid-item" id="video">
+        <input class="input" type="file" accept="video/*" id="video-input">
+        <video id="video-player" controls></video>
+      </div>
+      <div class="grid-item" id="network-table">
+        <input class="input" type="file" accept="application/JSON" id="network-input">
+          <table class="table is-fullwidth is-hoverable">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Method</th>
+                <th>Domain</th>
+                <th>File</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>200</td>
+                <td>GET</td>
+                <td>google.com</td>
+                <td>index.html</td>
+              </tr>
+            </tbody>
+          </table>
+
+      </div>
+      <div class="grid-item" id="network-detail">Network Detail</div>
+      <div class="grid-item" id="seeker">
+        <input id="seeker__seek" value="0" min="0" type="range" step="1">
+      </div>
+    </div>
+
+    <script>
+      const vizContainer = document.querySelector("#viz-container"); 
+
+      // ---> Start of network data handling
+      const networkInput = document.querySelector("#network-input");
+      const networkTable = document.querySelector('#network-table');
+      const networkTableBody = document.querySelector('#network-table tbody');
+      let networkBucket = {};
+
+      function onNewNetworkData(raw) {
+        // Bucketize records to relative seconds from the start timestamp
+        const startTimestamp = raw.startTimestamp;
+        const records = raw.records;
+        records.sort((a, b) => a.timestamp - b.timestamp);
+
+        networkBucket = {};
+        for (const record of records) {
+          const key = Math.round((record.timestamp - startTimestamp) / 1000);
+          const bucket = networkBucket[key] || [];
+          bucket.push(record);
+        }
+        console.log(networkBucket);
+      }
+
+      networkInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+          try {
+            onNewNetworkData(JSON.parse(event.target.result));
+          } catch (error) {
+            console.error('Error parsing JSON:', error);
+          }
+        };
+
+        reader.readAsText(file);
+      });
+
+      networkTable.addEventListener('click', (event) => {
+        console.log(event.target.tagName)
+        if (event.target.tagName === 'TD') {
+          // Access the clicked row
+          const clickedRow = event.target.closest('tr');
+          networkTable.querySelectorAll('.selected-row').forEach((row) => {
+            row.classList.remove('selected-row');
+          });
+          // Highlight the row
+          clickedRow.classList.add('selected-row');
+          // Perform other actions based on the clicked cell
+          console.log(event.target.textContent); // Access cell content
+        }
+      });
+
+      function networkOnSeek(elapsed) {
+        const records = networkBucket[elapsed] || [];
+        const rows = [];
+        console.log(records);
+        for (const record of records) {
+          rows.push(`
+            <tr>
+              <td>200</td>
+              <td>GET</td>
+              <td>google.com</td>
+              <td>index.html</td>
+            </tr>
+          `)
+        }
+        networkTableBody.innerHTML = rows.join("");
+      }
+      // <--- End of network data handling
+
+      // ---> Start of video/seeker handling
+      const videoInput = document.querySelector("#video-input");
+      const videoPlayer = document.querySelector("#video-player");
+      const videoSeek = document.querySelector("#seeker__seek");
+
+      videoInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        const url = URL.createObjectURL(file);
+        videoPlayer.src = url;
+      });
+
+      videoPlayer.addEventListener('loadedmetadata', () => {
+        const videoDuration = Math.round(videoPlayer.duration);
+        videoSeek.setAttribute('max', videoDuration);
+        // const time = formatTime(videoDuration);
+        // duration.innerText = `${time.minutes}:${time.seconds}`;
+        // duration.setAttribute('datetime', `${time.minutes}m ${time.seconds}s`)
+        videoPlayer.play();
+      });
+
+      videoPlayer.addEventListener("timeupdate", () => {
+        console.log(videoPlayer.currentTime)
+        const elapsed = Math.floor(videoPlayer.currentTime);
+        videoSeek.value = elapsed
+        networkOnSeek(elapsed);
+      });
+
+      function videoOnSeek(elapsed) {
+        videoPlayer.currentTime = elapsed;
+      }
+      // <--- End of video/seeker handling
+
+      videoSeek.addEventListener("input", (event) => {
+        const skipTo = event.target.dataset.seek ? event.target.dataset.seek : event.target.value;
+        videoOnSeek(skipTo);
+      })
+    </script>
+  </body>
+</html>

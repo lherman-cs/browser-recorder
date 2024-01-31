@@ -6,57 +6,27 @@ const requestClient = require('request-promise-native');
 const fs = require('fs');
 
 const url = "https://app.dev.bluecrewenv.com/app.html#!/roster";
-let onQuit = async () => { };
 
-async function exitHandler(evtOrExitCodeOrError) {
-  try {
-    await onQuit();
-  } catch (e) {
-    console.error('EXIT HANDLER ERROR', e);
-  }
-
-  process.exit(isNaN(+evtOrExitCodeOrError) ? 1 : +evtOrExitCodeOrError);
+function asleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
-[
-  'beforeExit', 'uncaughtException', 'unhandledRejection',
-  'SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP',
-  'SIGABRT', 'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV',
-  'SIGUSR2', 'SIGTERM',
-].forEach(evt => process.on(evt, exitHandler));
-
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: false, args: ['--disable-features=site-per-process'] });
+  const browser = await puppeteer.launch({ headless: false, devtools: false });
   const page = await browser.newPage();
+  const customUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36';
   const records = [];
 
-  await page.setRequestInterception(true);
+  await page.setUserAgent(customUA);
 
-  page.on('request', request => {
-    requestClient({
-      uri: request.url(),
-      resolveWithFullResponse: true,
-    }).then(response => {
-      const requestUrl = request.url();
-      const requestHeaders = request.headers();
-      const requestPostData = request.postData();
-      const responseHeaders = response.headers;
-      const responseSize = responseHeaders['content-length'];
-      const responseBody = response.body;
+  page.on('response', async response => {
+    const requestUrl = response.url();
+    const responseHeaders = response.headers();
 
-      records.push({
-        timestamp: Date.now(),
-        requestUrl: requestUrl,
-        requestHeaders: requestHeaders,
-        requestPostData: requestPostData,
-        responseHeaders: responseHeaders,
-        responseSize: responseSize,
-        responseBody: responseBody,
-      });
-
-      request.continue();
-    }).catch(error => {
-      request.abort();
+    records.push({
+      timestamp: Date.now(),
+      requestUrl,
+      responseHeaders,
     });
   });
 
@@ -66,21 +36,24 @@ async function exitHandler(evtOrExitCodeOrError) {
   console.log(`Going to ${url}`)
   page.goto(url);
 
-  onQuit = async () => {
-    console.log("Caught interrupt signal");
-    await recorder.stop();
-    console.log("Stopped recorder");
-    await browser.close();
-    console.log("Closed browser");
+  // TODO: Figure out how to close the browser
+  await asleep(10000);
+  await recorder.stop();
+  console.log("Stopped recorder");
+  // const pages = await browser.pages();
+  // for (let i = 0; i < pages.length; i++) {
+  //   await pages[i].close();
+  // }
+  // await browser.close();
+  // console.log("Closed browser");
 
-    const report = {
-      startTimestamp,
-      records: records,
-    };
-
-    const reportJson = JSON.stringify(report, null, 2);
-    const reportPath = `report_${startTimestamp.toString().json}`
-    fs.writeFileSync(reportPath, reportJson);
-    console.log(`Recorded to ${reportPath}`)
+  const report = {
+    startTimestamp,
+    records: records,
   };
+
+  const reportJson = JSON.stringify(report, null, 2);
+  const reportPath = `report_${startTimestamp.toString()}.json`
+  fs.writeFileSync(reportPath, reportJson);
+  console.log(`Recorded to ${reportPath}`)
 })()
