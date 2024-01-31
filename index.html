@@ -9,31 +9,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.0.0/jsoneditor.min.js"></script>
     <style>
     .grid-container {
+      visibility: hidden;
       display: grid;
       height: 100vh;
       width: 100vw; 
       grid-column-gap: 0px;
       grid-row-gap: 0px;
       grid-template:
-        "a b" 1fr
-        "a c" 1fr
-        "a c" 1fr
-        "a c" 1fr
-        "d d" 1fr / 1fr 1fr
+        "b c" 50%
+        "a a" 50% / 1fr 1fr;
     }
 
     #video {
       grid-area: a; 
-      margin: auto 0;
     }
 
     #video-input {
-      display: block;
     }
 
     #video-player {
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: scale-down;
+      background-color: black;
     }
 
     #network-table {
@@ -48,50 +46,35 @@
     #network-detail {
       grid-area: c;
     }
-
-    #seeker {
-      grid-area: d;
-      margin: auto 0;
-    }
-
-    #seeker__seek {
-      width: 100%;
-    }
     </style>
   </head>
   <body>
+    <div id="upload-container">
+      <input class="input" type="file" accept="video/*" id="video-input">
+      <input class="input" type="file" accept="application/JSON" id="network-input">
+    </div>
     <div class="grid-container" id="viz-container">
       <div class="grid-item" id="video">
-        <input class="input" type="file" accept="video/*" id="video-input">
         <video id="video-player" controls></video>
       </div>
       <div class="grid-item" id="network-table">
-        <input class="input" type="file" accept="application/JSON" id="network-input">
-          <table class="table is-fullwidth is-hoverable">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Method</th>
-                <th>URL</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>200</td>
-                <td>GET</td>
-                <td>google.com/</td>
-              </tr>
-            </tbody>
-          </table>
-
+        <table class="table is-fullwidth is-hoverable">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Method</th>
+              <th>URL</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
       </div>
-      <div class="grid-item" id="network-detail">Network Detail</div>
-      <div class="grid-item" id="seeker">
-        <input id="seeker__seek" value="0" min="0" type="range" step="1">
-      </div>
+      <div class="grid-item" id="network-detail"></div>
     </div>
 
     <script>
+      const uploadContainer = document.querySelector("#upload-container"); 
       const vizContainer = document.querySelector("#viz-container"); 
 
       // ---> Start of network data handling
@@ -100,7 +83,7 @@
       const networkTableBody = document.querySelector('#network-table tbody');
       const networkDetail = document.querySelector('#network-detail');
       const networkDetailEditor = new JSONEditor(networkDetail, {})
-      let networkBucket = {};
+      let networkBucket = null;
 
       function onNewNetworkData(raw) {
         // Bucketize records to relative seconds from the start timestamp
@@ -116,6 +99,7 @@
           networkBucket[key] = bucket;
         }
         console.log(networkBucket);
+        onSubmit();
       }
 
       networkInput.addEventListener('change', (event) => {
@@ -184,39 +168,33 @@
       // ---> Start of video/seeker handling
       const videoInput = document.querySelector("#video-input");
       const videoPlayer = document.querySelector("#video-player");
-      const videoSeek = document.querySelector("#seeker__seek");
 
       videoInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         const url = URL.createObjectURL(file);
         videoPlayer.src = url;
-      });
-
-      videoPlayer.addEventListener('loadedmetadata', () => {
-        const videoDuration = Math.round(videoPlayer.duration);
-        videoSeek.setAttribute('max', videoDuration);
-        // const time = formatTime(videoDuration);
-        // duration.innerText = `${time.minutes}:${time.seconds}`;
-        // duration.setAttribute('datetime', `${time.minutes}m ${time.seconds}s`)
-        videoPlayer.play();
+        onSubmit();
       });
 
       videoPlayer.addEventListener("timeupdate", () => {
         console.log(videoPlayer.currentTime)
         const elapsed = Math.floor(videoPlayer.currentTime);
-        videoSeek.value = elapsed
         networkOnSeek(elapsed);
       });
-
-      function videoOnSeek(elapsed) {
-        videoPlayer.currentTime = elapsed;
-      }
       // <--- End of video/seeker handling
 
-      videoSeek.addEventListener("input", (event) => {
-        const skipTo = event.target.dataset.seek ? event.target.dataset.seek : event.target.value;
-        videoOnSeek(skipTo);
-      })
+      // ---> Start of upload handling
+      function onSubmit() {
+        console.log("On submit")
+        console.log(networkBucket)
+        console.log(videoPlayer.src)
+        if (networkBucket && videoPlayer.src) {
+          uploadContainer.style.display = 'none'; 
+          vizContainer.style.visibility = 'visible'; 
+        } 
+      }
+      // <--- End of upload handling
+
     </script>
   </body>
 </html>
