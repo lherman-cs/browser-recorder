@@ -37,6 +37,7 @@
     #network-table {
       grid-area: b;
       cursor: pointer;
+      overflow: scroll;
     }
 
     .selected-row {
@@ -83,6 +84,7 @@
       const networkTableBody = document.querySelector('#network-table tbody');
       const networkDetail = document.querySelector('#network-detail');
       const networkDetailEditor = new JSONEditor(networkDetail, {})
+      const networkDetailDelaySeconds = 5;
       let networkBucket = null;
 
       function onNewNetworkData(raw) {
@@ -145,21 +147,24 @@
       });
 
       function networkOnSeek(elapsed) {
-        const records = networkBucket[elapsed] || [];
         const rows = [];
-        console.log(records);
-        for (let recordIdx = 0; recordIdx < records.length; recordIdx++) {
-          const record = records[recordIdx];
-          if (record.requestMethod === "OPTIONS") {
-            continue;
+
+        for (let currentTime = elapsed - networkDetailDelaySeconds; currentTime <= elapsed; currentTime++) {
+          const records = networkBucket[currentTime] || [];
+          for (let recordIdx = 0; recordIdx < records.length; recordIdx++) {
+            const record = records[recordIdx];
+            const contentType = record.responseHeaders["content-type"] || "";
+            if (record.requestMethod === "OPTIONS" || record.requestType != "fetch" || !contentType.toLowerCase().includes("json")) {
+              continue;
+            }
+            rows.push(`
+                <tr data-id="${currentTime}-${recordIdx}">
+                <td>${record.responseStatus}</td>
+                <td>${record.requestMethod}</td>
+                <td>${record.requestUrl}</td>
+              </tr>
+            `)
           }
-          rows.push(`
-              <tr data-id="${elapsed}-${recordIdx}">
-              <td>${record.responseStatus}</td>
-              <td>${record.requestMethod}</td>
-              <td>${record.requestUrl}</td>
-            </tr>
-          `)
         }
         networkTableBody.innerHTML = rows.join("");
       }
