@@ -2,7 +2,6 @@
 
 const puppeteer = require('puppeteer');
 const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
-const requestClient = require('request-promise-native');
 const fs = require('fs');
 
 const url = "https://app.dev.bluecrewenv.com/app.html#!/roster";
@@ -14,19 +13,27 @@ function asleep(ms) {
 (async () => {
   const browser = await puppeteer.launch({ headless: false, devtools: false });
   const page = await browser.newPage();
+  await page.setViewport({ width: 1366, height: 768});
   const customUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36';
   const records = [];
 
   await page.setUserAgent(customUA);
 
   page.on('response', async response => {
+    if (response.request().resourceType() != "xhr") {
+      return;
+    }
     const requestUrl = response.url();
     const responseHeaders = response.headers();
+    const responseStatus = response.status();
+    const requestMethod = response.request().method();
 
     records.push({
       timestamp: Date.now(),
       requestUrl,
       responseHeaders,
+      responseStatus,
+      requestMethod,
     });
   });
 

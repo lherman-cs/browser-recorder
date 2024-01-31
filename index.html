@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Browser Visualization</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.0.0/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/10.0.0/jsoneditor.min.js"></script>
     <style>
     .grid-container {
       display: grid;
@@ -13,13 +15,16 @@
       grid-column-gap: 0px;
       grid-row-gap: 0px;
       grid-template:
-        "a b" auto
-        "a c" auto
-        "d d" auto
+        "a b" 1fr
+        "a c" 1fr
+        "a c" 1fr
+        "a c" 1fr
+        "d d" 1fr / 1fr 1fr
     }
 
     #video {
       grid-area: a; 
+      margin: auto 0;
     }
 
     #video-input {
@@ -46,6 +51,7 @@
 
     #seeker {
       grid-area: d;
+      margin: auto 0;
     }
 
     #seeker__seek {
@@ -66,16 +72,14 @@
               <tr>
                 <th>Status</th>
                 <th>Method</th>
-                <th>Domain</th>
-                <th>File</th>
+                <th>URL</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>200</td>
                 <td>GET</td>
-                <td>google.com</td>
-                <td>index.html</td>
+                <td>google.com/</td>
               </tr>
             </tbody>
           </table>
@@ -94,6 +98,8 @@
       const networkInput = document.querySelector("#network-input");
       const networkTable = document.querySelector('#network-table');
       const networkTableBody = document.querySelector('#network-table tbody');
+      const networkDetail = document.querySelector('#network-detail');
+      const networkDetailEditor = new JSONEditor(networkDetail, {})
       let networkBucket = {};
 
       function onNewNetworkData(raw) {
@@ -107,6 +113,7 @@
           const key = Math.round((record.timestamp - startTimestamp) / 1000);
           const bucket = networkBucket[key] || [];
           bucket.push(record);
+          networkBucket[key] = bucket;
         }
         console.log(networkBucket);
       }
@@ -126,18 +133,30 @@
         reader.readAsText(file);
       });
 
+      function onSelectRow(row) {
+        if (!row) {
+          return;
+        }
+
+        const selectedDataID = row.getAttribute("data-id");
+        console.log(`Selected: ${selectedDataID}`)
+        const tokens = selectedDataID.split("-");
+        const elapsed = parseInt(tokens[0]);
+        const recordIdx = parseInt(tokens[1]);
+        const record = networkBucket[elapsed][recordIdx];
+        console.log(record);
+        networkDetailEditor.set(record)
+      }
+
       networkTable.addEventListener('click', (event) => {
-        console.log(event.target.tagName)
         if (event.target.tagName === 'TD') {
-          // Access the clicked row
           const clickedRow = event.target.closest('tr');
-          networkTable.querySelectorAll('.selected-row').forEach((row) => {
-            row.classList.remove('selected-row');
-          });
-          // Highlight the row
+          const previousRow = networkTable.querySelector('.selected-row');
+          if (previousRow) {
+            previousRow.classList.remove('selected-row');
+          }
           clickedRow.classList.add('selected-row');
-          // Perform other actions based on the clicked cell
-          console.log(event.target.textContent); // Access cell content
+          onSelectRow(clickedRow);
         }
       });
 
@@ -145,13 +164,16 @@
         const records = networkBucket[elapsed] || [];
         const rows = [];
         console.log(records);
-        for (const record of records) {
+        for (let recordIdx = 0; recordIdx < records.length; recordIdx++) {
+          const record = records[recordIdx];
+          if (record.requestMethod === "OPTIONS") {
+            continue;
+          }
           rows.push(`
-            <tr>
-              <td>200</td>
-              <td>GET</td>
-              <td>google.com</td>
-              <td>index.html</td>
+              <tr data-id="${elapsed}-${recordIdx}">
+              <td>${record.responseStatus}</td>
+              <td>${record.requestMethod}</td>
+              <td>${record.requestUrl}</td>
             </tr>
           `)
         }
