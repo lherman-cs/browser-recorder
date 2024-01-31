@@ -22,6 +22,7 @@ const url = process.argv[2];
   const customUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36';
   const records = [];
 
+  await page.setCacheEnabled(false);
   await page.setUserAgent(customUA);
 
   page.on('response', async response => {
@@ -55,8 +56,9 @@ const url = process.argv[2];
   });
 
   const recorder = new PuppeteerScreenRecorder(page);
+  const reportName = `report_${new Date().toUTCString()}`;
+  await recorder.start(`${reportName}.mp4`); // supports extension - mp4, avi, webm and mov
   const startTimestamp = Date.now();
-  await recorder.start(`report_${startTimestamp.toString()}.mp4`); // supports extension - mp4, avi, webm and mov
   console.log(`Going to ${url}`)
   page.goto(url);
 
@@ -75,7 +77,7 @@ const url = process.argv[2];
   };
 
   const reportJson = JSON.stringify(report, null, 2);
-  const reportPath = `report_${startTimestamp.toString()}.json`
+  const reportPath = `${reportName}.json`
   fs.writeFileSync(reportPath, reportJson);
   console.log(`Recorded to ${reportPath}`)
 
