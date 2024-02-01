@@ -62,6 +62,7 @@
         <table class="table is-fullwidth is-hoverable">
           <thead>
             <tr>
+              <th>Timer</th>
               <th>Status</th>
               <th>Method</th>
               <th>URL</th>
@@ -84,7 +85,7 @@
       const networkTableBody = document.querySelector('#network-table tbody');
       const networkDetail = document.querySelector('#network-detail');
       const networkDetailEditor = new JSONEditor(networkDetail, {})
-      const networkDetailDelaySeconds = 2;
+      const networkDetailDelaySeconds = 5;
       let networkBucket = null;
 
       function onNewNetworkData(raw) {
@@ -160,7 +161,8 @@
               continue;
             }
             rows.push(`
-                <tr data-id="${currentTime}-${recordIdx}">
+              <tr data-id="${currentTime}-${recordIdx}">
+                <td>${currentTime - elapsedStart}s</td>
                 <td>${record.responseStatus}</td>
                 <td>${record.requestMethod}</td>
                 <td>${record.requestUrl}</td>

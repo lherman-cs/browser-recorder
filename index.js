@@ -15,7 +15,7 @@ const url = process.argv[2];
 (async () => {
   const browser = await puppeteer.launch({
     headless: false, 
-    userDataDir: '~/Library/Application Support/Google/Chrome',
+    userDataDir: 'userdata',
     devtools: false, defaultViewport: null, args: [
       "--start-fullscreen",
       "--use-gl=angle",
@@ -71,12 +71,10 @@ const url = process.argv[2];
     videoBitrate: 1000,
     aspectRatio: '16:9',
   });
-  const reportName = `report_${new Date().toUTCString()}`;
-  const recorderStart = Date.now();
-  await recorder.start(`${reportName}.mp4`); // supports extension - mp4, avi, webm and mov
   const startTimestamp = Date.now();
+  const reportName = `report_${startTimestamp}`;
+  await recorder.start(`${reportName}.mp4`); // supports extension - mp4, avi, webm and mov
 
-  console.log(`Recorder start delay: ${startTimestamp - recorderStart}ms`)
   console.log(`Going to ${url}`)
   page.goto(url);
 

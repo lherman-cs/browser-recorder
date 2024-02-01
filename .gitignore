@@ -2,3 +2,4 @@ report_*.mp4
 report_*.json
 node_modules
 .DS_Store
+userdata
