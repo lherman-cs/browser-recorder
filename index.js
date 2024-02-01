@@ -14,10 +14,13 @@ const url = process.argv[2];
 
 (async () => {
   const browser = await puppeteer.launch({
-    headless: false, devtools: false, defaultViewport: null, args: [
+    headless: false, 
+    userDataDir: '~/Library/Application Support/Google/Chrome',
+    devtools: false, defaultViewport: null, args: [
       "--start-fullscreen",
       "--use-gl=angle",
-      "--use-angle=gl"
+      "--use-angle=gl",
+      '--profile-directory=Default',
     ]
   });
   const page = await browser.newPage();
