@@ -14,7 +14,7 @@ const url = process.argv[2];
 
 (async () => {
   const browser = await puppeteer.launch({
-    headless: false, devtools: true, defaultViewport: null, args: [
+    headless: false, devtools: false, defaultViewport: null, args: [
       "--start-fullscreen",
       "--use-gl=angle",
       "--use-angle=gl"
@@ -56,7 +56,7 @@ const url = process.argv[2];
 
   const recorder = new PuppeteerScreenRecorder(page, {
     followNewTab: true,
-    fps: 30,
+    fps: 25,
     ffmpeg_Path: null,
     videoFrame: {
       width: null,
