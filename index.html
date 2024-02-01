@@ -157,7 +157,9 @@
           for (let recordIdx = 0; recordIdx < records.length; recordIdx++) {
             const record = records[recordIdx];
             const contentType = record.responseHeaders["content-type"] || "";
-            if (record.requestMethod === "OPTIONS" || record.requestType != "fetch" || !contentType.toLowerCase().includes("json")) {
+            const jsonOnly = contentType.toLowerCase().includes("json");
+            const fetchOrXhrOnly = ["fetch", "xhr"].includes(record.requestType);
+            if (record.requestMethod === "OPTIONS" || !fetchOrXhrOnly || !jsonOnly) {
               continue;
             }
             rows.push(`
