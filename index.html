@@ -84,7 +84,7 @@
       const networkTableBody = document.querySelector('#network-table tbody');
       const networkDetail = document.querySelector('#network-detail');
       const networkDetailEditor = new JSONEditor(networkDetail, {})
-      const networkDetailDelaySeconds = 5;
+      const networkDetailDelaySeconds = 2;
       let networkBucket = null;
 
       function onNewNetworkData(raw) {
@@ -95,7 +95,7 @@
 
         networkBucket = {};
         for (const record of records) {
-          const key = Math.round((record.timestamp - startTimestamp) / 1000);
+          const key = Math.floor((record.timestamp - startTimestamp) / 1000);
           const bucket = networkBucket[key] || [];
           bucket.push(record);
           networkBucket[key] = bucket;
@@ -149,7 +149,9 @@
       function networkOnSeek(elapsed) {
         const rows = [];
 
-        for (let currentTime = elapsed - networkDetailDelaySeconds; currentTime <= elapsed; currentTime++) {
+        const elapsedStart = elapsed - networkDetailDelaySeconds / 2;
+        const elapsedEnd = elapsed + networkDetailDelaySeconds / 2;
+        for (let currentTime = elapsedStart; currentTime <= elapsedEnd; currentTime++) {
           const records = networkBucket[currentTime] || [];
           for (let recordIdx = 0; recordIdx < records.length; recordIdx++) {
             const record = records[recordIdx];

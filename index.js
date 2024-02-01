@@ -8,14 +8,16 @@ const fs = require('fs');
 if (process.argv.length != 3) {
   console.error(`Usage: ${process.argv[0]} ${process.argv[1]} <url>`);
   process.exit(1);
-} 
+}
 
 const url = process.argv[2];
 
 (async () => {
   const browser = await puppeteer.launch({
-    headless: false, devtools: false, defaultViewport: null, args: [
+    headless: false, devtools: true, defaultViewport: null, args: [
       "--start-fullscreen",
+      "--use-gl=angle",
+      "--use-angle=gl"
     ]
   });
   const page = await browser.newPage();
@@ -26,9 +28,6 @@ const url = process.argv[2];
   await page.setUserAgent(customUA);
 
   page.on('response', async response => {
-    if (response.timing() === null) {
-      return;
-    }
     const timestamp = Date.now();
     const timing = response.timing();
     const requestUrl = response.url();
@@ -55,10 +54,26 @@ const url = process.argv[2];
     });
   });
 
-  const recorder = new PuppeteerScreenRecorder(page);
+  const recorder = new PuppeteerScreenRecorder(page, {
+    followNewTab: true,
+    fps: 30,
+    ffmpeg_Path: null,
+    videoFrame: {
+      width: null,
+      height: null,
+    },
+    videoCrf: 30,
+    videoCodec: 'libx264',
+    videoPreset: 'ultrafast',
+    videoBitrate: 1000,
+    aspectRatio: '16:9',
+  });
   const reportName = `report_${new Date().toUTCString()}`;
+  const recorderStart = Date.now();
   await recorder.start(`${reportName}.mp4`); // supports extension - mp4, avi, webm and mov
   const startTimestamp = Date.now();
+
+  console.log(`Recorder start delay: ${startTimestamp - recorderStart}ms`)
   console.log(`Going to ${url}`)
   page.goto(url);
 
