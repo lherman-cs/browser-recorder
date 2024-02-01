@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = '1.0'; // This will determine breaking changes on the record format.
+const VERSION = '1.1'; // This will determine breaking changes on the record format.
 const puppeteer = require('puppeteer');
 const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 const fs = require('fs');
@@ -36,8 +36,10 @@ const url = process.argv[2];
     const requestUrl = response.url();
     const responseHeaders = response.headers();
     const responseStatus = response.status();
+    const requestHeaders = response.request().headers;
     const requestMethod = response.request().method();
     const requestType = response.request().resourceType();
+    const requestPostData = response.request().postData();
     let responseJson;
     try {
       responseJson = await response.json();
@@ -53,6 +55,8 @@ const url = process.argv[2];
       responseStatus,
       requestMethod,
       requestType,
+      requestHeaders,
+      requestPostData,
       responseJson,
     });
   });
