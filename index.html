@@ -149,8 +149,8 @@
       function networkOnSeek(elapsed) {
         const rows = [];
 
-        const elapsedStart = elapsed - networkDetailDelaySeconds / 2;
-        const elapsedEnd = elapsed + networkDetailDelaySeconds / 2;
+        const elapsedStart = elapsed - networkDetailDelaySeconds;
+        const elapsedEnd = elapsed;
         for (let currentTime = elapsedStart; currentTime <= elapsedEnd; currentTime++) {
           const records = networkBucket[currentTime] || [];
           for (let recordIdx = 0; recordIdx < records.length; recordIdx++) {
