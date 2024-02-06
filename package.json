@@ -12,6 +12,6 @@
   "license": "ISC",
   "dependencies": {
     "puppeteer": "^21.10.0",
-    "puppeteer-screen-recorder": "^2.1.2"
+    "puppeteer-screen-recorder": "git://github.com/lherman-cs/puppeteer-screen-recorder.git#8ce8d3544224a57ad0d936a1be541e29bfc25440"
   }
 }
